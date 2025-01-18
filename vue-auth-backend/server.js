@@ -1,24 +1,17 @@
 const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-require('dotenv').config();
+const router = express.Router();
 
-const app = express();
+router.post('/', (req, res) => {
+  const userData = req.body;
+  console.log('Received data:', userData);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+  // Save data to database (example)
+  // const newUser = new User(userData);
+  // newUser.save()
+  //   .then(() => res.status(201).json({ message: 'User data saved successfully!' }))
+  //   .catch(err => res.status(500).json({ error: 'Failed to save user data', details: err }));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  res.status(201).json({ message: 'User data received successfully!', data: userData });
+});
 
-// Routes
-app.use('/api/auth', require('./routes/auth'));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+module.exports = router;

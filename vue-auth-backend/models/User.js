@@ -1,38 +1,67 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
-  fname: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  lname:{
-    type: String,
-    required: true,
-    trim: true
-  },
-  adh_no:{
-    type: String,
-    required: true,
-    trim: true
-  },
-  mobile:{
-    type: String,
-    required: true
-  }
-},{
-  
-}, { timestamps: true });
+const UserSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    age: {
+      type: Number,
+      required: true,
+      min: 18,
+    },
+    mobile: {
+      type: String,
+      required: true,
+      match: /^\d{10}$/, // Ensure a 10-digit number
+    },
+    address: {
+      village: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      district: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      state: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      pincode: {
+        type: String,
+        required: true,
+        match: /^\d{6}$/, // Ensure a 6-digit pincode
+      },
+    },
+    bankDetails: {
+      accountNumber: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      bankName: {
+        type: String,
+        trim: true,
+      },
+      branchName: {
+        type: String,
+        trim: true,
+      },
+    },
 
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-UserSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
+  },
+  { timestamps: true }
+);
 
 module.exports = mongoose.model('User', UserSchema);
