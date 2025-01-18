@@ -5,11 +5,13 @@
         <h2 class="text-xl font-bold mb-6">Agricultural Insurance Premium Calculator</h2>
         
         <div class="space-y-4">
+          <!-- Form Fields -->
           <div>
             <label class="block text-sm font-medium mb-1">Soil Type</label>
             <select 
               v-model="formData.soilType"
               class="w-full p-2 border rounded"
+              @change="updateRecommendedPolicy"
             >
               <option value="">Select Soil Type</option>
               <option v-for="soil in soilTypes" :key="soil.value" :value="soil.value">
@@ -23,6 +25,7 @@
             <select
               v-model="formData.rainfall"
               class="w-full p-2 border rounded"
+              @change="updateRecommendedPolicy"
             >
               <option value="">Select Rainfall Level</option>
               <option v-for="level in rainfallLevels" :key="level.value" :value="level.value">
@@ -37,6 +40,7 @@
               v-model="formData.crop"
               class="w-full p-2 border rounded"
               :disabled="!formData.soilType"
+              @change="updateRecommendedPolicy"
             >
               <option value="">Select Crop</option>
               <option v-for="crop in availableCrops" :key="crop" :value="crop">
@@ -51,7 +55,7 @@
               type="number"
               v-model="formData.landSize"
               class="w-full p-2 border rounded"
-              placeholder="Enter land size in acres"
+              placeholder="Enter land size"
             />
           </div>
 
@@ -61,21 +65,8 @@
               type="number"
               v-model="formData.cropValue"
               class="w-full p-2 border rounded"
-              placeholder="Enter expected value per acre"
+              placeholder="Enter expected value"
             />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1">Previous Claims</label>
-            <select
-              v-model="formData.previousClaims"
-              class="w-full p-2 border rounded"
-            >
-              <option value="0">No Previous Claims</option>
-              <option value="1">1 Claim</option>
-              <option value="2">2 Claims</option>
-              <option value="3">3+ Claims</option>
-            </select>
           </div>
 
           <div class="space-y-2">
@@ -83,6 +74,7 @@
               <input
                 type="checkbox"
                 v-model="formData.hasIrrigation"
+                @change="updateRecommendedPolicy"
               />
               <span>Has Irrigation System</span>
             </label>
@@ -91,6 +83,7 @@
               <input
                 type="checkbox"
                 v-model="formData.usesOrganicFarming"
+                @change="updateRecommendedPolicy"
               />
               <span>Uses Organic Farming (15% discount)</span>
             </label>
@@ -99,35 +92,49 @@
               <input
                 type="checkbox"
                 v-model="formData.usesWeatherAlerts"
+                @change="updateRecommendedPolicy"
               />
-              <span>Enrolled in Weather Alert System (10% discount)</span>
+              <span>Weather Alert System (10% discount)</span>
             </label>
           </div>
 
           <button
             @click="calculatePremium"
-            class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
             :disabled="!isFormValid"
           >
             Calculate Premium
           </button>
 
-          <div v-if="premium" class="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-            <h3 class="font-bold text-lg">Annual Premium: ₹{{ premium }}</h3>
-            <p class="text-sm text-gray-600">Monthly Payment: ₹{{ monthlyPremium }}</p>
-            <p class="text-sm text-gray-600">Risk Multiplier: {{ riskMultiplier }}x</p>
-            <p class="text-sm text-gray-600">Total Insured Value: ₹{{ totalInsuredValue }}</p>
-          </div>
+          <!-- Results Section -->
+          <div v-if="premium && recommendedPolicy" class="mt-4 space-y-4">
+            <!-- Premium Details -->
+            <div class="p-4 bg-green-50 border border-green-200 rounded">
+              <h3 class="font-bold text-lg">Premium Details</h3>
+              <div class="space-y-2 mt-2">
+                <p>Annual Premium: ₹{{ premium }}</p>
+                <p>Monthly Payment: ₹{{ monthlyPremium }}</p>
+                <p>Total Insured Value: ₹{{ totalInsuredValue }}</p>
+              </div>
+            </div>
 
-          <div v-if="showRiskAlert" class="flex items-start space-x-2 text-sm text-amber-600">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <p>
-              {{ riskAlertMessage }}
-            </p>
+            <!-- Recommended Policy -->
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded">
+              <h3 class="font-bold text-lg">Recommended Policy</h3>
+              <div class="space-y-2 mt-2">
+                <p class="font-medium">{{ recommendedPolicy.name }}</p>
+                <p>Risk Level: {{ recommendedPolicy.riskLevel }}</p>
+                <p>Coverage: {{ recommendedPolicy.coverage }}%</p>
+                <p>Base Premium: {{ recommendedPolicy.basePremium }}%</p>
+                
+                <div v-if="appliedDiscounts.length > 0" class="mt-3">
+                  <p class="font-medium">Applied Discounts:</p>
+                  <ul class="list-disc list-inside">
+                    <li v-for="discount in appliedDiscounts" :key="discount">{{ discount }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -146,12 +153,38 @@ export default {
         crop: '',
         cropValue: '',
         landSize: '',
-        previousClaims: '0',
         hasIrrigation: false,
         usesOrganicFarming: false,
         usesWeatherAlerts: false
       },
       premium: null,
+      recommendedPolicy: null,
+      policies: {
+        alluvial: {
+          name: 'Standard Alluvial Protection Plan',
+          riskLevel: 'Low to Medium',
+          basePremium: 3,
+          coverage: 90
+        },
+        black: {
+          name: 'Black Soil Security Plan',
+          riskLevel: 'Medium',
+          basePremium: 4,
+          coverage: 85
+        },
+        red: {
+          name: 'Red Soil Protection Plan',
+          riskLevel: 'Medium to High',
+          basePremium: 4.5,
+          coverage: 80
+        },
+        desert: {
+          name: 'Desert Region Special Plan',
+          riskLevel: 'Very High',
+          basePremium: 6,
+          coverage: 75
+        }
+      },
       soilTypes: [
         { value: 'alluvial', label: 'Alluvial Soil', basePremium: 0.03 },
         { value: 'black', label: 'Black Soil', basePremium: 0.04 },
@@ -169,27 +202,6 @@ export default {
         black: ['Cotton', 'Jowar', 'Sunflower', 'Sugarcane', 'Pulses'],
         red: ['Groundnut', 'Millets', 'Pulses', 'Cotton', 'Cashew'],
         desert: ['Bajra', 'Cluster Beans', 'Moth Beans']
-      },
-      optimalCombinations: {
-        alluvial: {
-          high: ['Rice', 'Jute'],
-          medium: ['Wheat', 'Maize'],
-          low: ['Wheat']
-        },
-        black: {
-          high: ['Sugarcane'],
-          medium: ['Cotton', 'Jowar'],
-          low: ['Cotton']
-        },
-        red: {
-          high: ['Cashew'],
-          medium: ['Groundnut'],
-          low: ['Millets']
-        },
-        desert: {
-          low: ['Bajra'],
-          'very-low': ['Bajra']
-        }
       }
     }
   },
@@ -201,11 +213,8 @@ export default {
       return this.formData.soilType && 
              this.formData.rainfall && 
              this.formData.crop && 
-             this.formData.cropValue && 
-             this.formData.landSize
-    },
-    riskMultiplier() {
-      return this.calculateRiskMultiplier().toFixed(2)
+             this.formData.cropValue > 0 &&
+             this.formData.landSize > 0
     },
     monthlyPremium() {
       return this.premium ? (this.premium / 12).toFixed(2) : '0'
@@ -213,39 +222,44 @@ export default {
     totalInsuredValue() {
       return (parseFloat(this.formData.cropValue) * parseFloat(this.formData.landSize)).toFixed(2)
     },
-    showRiskAlert() {
-      return this.formData.soilType && this.formData.rainfall && this.formData.crop
-    },
-    riskAlertMessage() {
-      return this.calculateRiskMultiplier() === 1 
-        ? "This is an optimal crop choice for your conditions!"
-        : "Consider choosing crops better suited for these conditions to reduce premium."
+    appliedDiscounts() {
+      const discounts = []
+      if (this.formData.usesOrganicFarming) {
+        discounts.push('Organic Farming Discount (15%)')
+      }
+      if (this.formData.usesWeatherAlerts) {
+        discounts.push('Weather Alert System Discount (10%)')
+      }
+      return discounts
     }
   },
   methods: {
-    calculateRiskMultiplier() {
-      const { soilType, rainfall, crop, hasIrrigation, previousClaims } = this.formData
-      let multiplier = 1.0
-
-      if (!this.optimalCombinations[soilType]?.[rainfall]?.includes(crop)) {
-        multiplier *= hasIrrigation ? 1.5 : 2.0
+    updateRecommendedPolicy() {
+      if (this.formData.soilType) {
+        this.recommendedPolicy = this.policies[this.formData.soilType]
       }
-
-      multiplier *= (1 + (parseInt(previousClaims) * 0.1))
-      return multiplier
     },
     calculatePremium() {
       const basePremium = this.soilTypes.find(s => s.value === this.formData.soilType).basePremium
-      const riskMultiplier = this.calculateRiskMultiplier()
-      let finalPremium = basePremium * riskMultiplier
+      let finalPremium = basePremium
 
-      if (this.formData.usesOrganicFarming) finalPremium *= 0.85
-      if (this.formData.usesWeatherAlerts) finalPremium *= 0.90
+      // Apply risk adjustments
+      if (!this.formData.hasIrrigation) {
+        finalPremium *= 1.2 // 20% increase for no irrigation
+      }
+
+      // Apply discounts
+      if (this.formData.usesOrganicFarming) {
+        finalPremium *= 0.85 // 15% discount
+      }
+      if (this.formData.usesWeatherAlerts) {
+        finalPremium *= 0.90 // 10% discount
+      }
 
       const totalValue = parseFloat(this.formData.cropValue) * parseFloat(this.formData.landSize)
       this.premium = (finalPremium * totalValue).toFixed(2)
+      this.updateRecommendedPolicy()
     }
   }
 }
 </script>
-
