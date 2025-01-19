@@ -23,7 +23,7 @@
       <div class="welcome-section">
         <h3>Welcome to KIC</h3>
         <p>Protecting farmers and their livelihoods across India</p>
-        <button class="get-started-btn">Get Started</button>
+        <a href="/login"><button class="get-started-btn">Get Started</button></a>
       </div>
     </div>
   </div>
@@ -41,6 +41,7 @@ export default {
   position: relative;
   overflow: hidden;
   color: #ffffff;
+  z-index: 0;
 }
 
 .background-overlay {
@@ -66,6 +67,7 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  z-index: 0;
 }
 
 .header {

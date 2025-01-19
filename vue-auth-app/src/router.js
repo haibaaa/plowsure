@@ -9,9 +9,9 @@ import Calculator from './components/Calculator.vue'
 
 const routes = [
   { path: '/', redirect: '/dashboard' },
+  { path: '/dashboard', component: Dashboard },
   { path: '/login', component: LoginForm },
   { path: '/register', component: RegisterForm },
-  { path: '/dashboard', component: Dashboard },
   { path: '/policy', component: Policypage},
   { path: '/calculator', component: Calculator}
 ]
