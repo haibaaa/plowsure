@@ -1,17 +1,31 @@
 const express = require('express');
-const router = express.Router();
+const cors = require('cors');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const authRouter = require('./routes/auth');
 
-router.post('/', (req, res) => {
-  const userData = req.body;
-  console.log('Received data:', userData);
+const app = express();
+const PORT = 5000;
 
-  // Save data to database (example)
-  // const newUser = new User(userData);
-  // newUser.save()
-  //   .then(() => res.status(201).json({ message: 'User data saved successfully!' }))
-  //   .catch(err => res.status(500).json({ error: 'Failed to save user data', details: err }));
+// Middleware
+app.use(cors()); // Enable CORS for all origins
+app.use(bodyParser.json()); // Parse incoming JSON requests
 
-  res.status(201).json({ message: 'User data received successfully!', data: userData });
+// Routes
+app.use('/api', authRouter);
+
+mongoose.connect('mongodb+srv://haibaa:h1wMVvQCsOL98c8d@cluster0.uysfm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+    .then(() => {
+        console.log("Connected to MongoDB!");
+    })
+    .catch((err) => {
+        console.error("Error connecting to MongoDB:", err);
+    });
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`Backend server running on http://localhost:${PORT}`);
 });
-
-module.exports = router;

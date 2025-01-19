@@ -1,52 +1,31 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 const router = express.Router();
+const User = require('../models/User'); // Import the User model
 
-// Register a new user
-router.post('/register', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email already in use' });
-    }
-    const user = new User({ email, password });
-    await user.save();
-    res.status(201).json({ message: 'User created successfully', userId: user._id });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
+// POST route to save a new user to the database
+router.post('/add-user', async (req, res) => {
+    try {
+        const { firstName, lastName, age, mobile, adharno, address, bankDetails } = req.body;
 
-// Login user
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).json({ error: 'Invalid email or password' });
-    }
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
+        // Create a new user instance
+        const newUser = new User({
+            firstName,
+            lastName,
+            age,
+            mobile,
+            adharno,
+            address,
+            bankDetails
+        });
 
-// Get user profile
-router.get('/profile', async (req, res) => {
-  try {
-    const token = req.headers.authorization.split('Bearer ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+        // Save the new user to the database
+        await newUser.save();
+
+        // Send a response back
+        res.status(201).json({ message: 'User added successfully!', user: newUser });
+    } catch (error) {
+        res.status(400).json({ message: 'Error adding user', error });
     }
-    res.json({ user: { email: user.email, id: user._id } });
-  } catch (error) {
-    res.status(401).json({ error: 'Unauthorized' });
-  }
 });
 
 module.exports = router;
